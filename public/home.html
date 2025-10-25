@@ -294,7 +294,8 @@
 
       const container = document.getElementById("recaptcha-container");
       if (container) {
-        container.innerHTML = <div class="g-recaptcha" data-sitekey="${siteKey}"></div>;
+
+        container.innerHTML = `<div class="g-recaptcha" data-sitekey="${siteKey}"></div>`;
         grecaptcha.render(container.firstChild);
       }
     })();
