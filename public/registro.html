@@ -154,28 +154,6 @@
                 </select>
               </div>
 
-              <!-- 🧠 reCAPTCHA (misma lógica que login) -->
-              <div id="recaptcha-container" class="mb-3 text-center"></div>
-              <script>
-                (function initRecaptcha() {
-                  const isLocal = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
-                  const siteKey = isLocal
-                    ? "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb" // ✅ misma que login
-                    : "TU_CLAVE_SITE_KEY_PROD_AQUI";
-
-                  const container = document.getElementById("recaptcha-container");
-                  container.innerHTML = `<div class="g-recaptcha" data-sitekey="${siteKey}"></div>`;
-
-                  if (typeof grecaptcha === "undefined") {
-                    const script = document.createElement("script");
-                    script.src = "https://www.google.com/recaptcha/api.js";
-                    script.async = true;
-                    script.defer = true;
-                    script.onload = () => console.log("✅ reCAPTCHA cargado correctamente en registro");
-                    document.body.appendChild(script);
-                  }
-                })();
-              </script>
 
               <button type="submit" id="submit-button" class="btn btn-success w-100">
                 <i class="fas fa-user-plus me-2"></i>Registrar Usuario
@@ -251,14 +229,9 @@
         return;
       }
 
-      const captchaResponse = grecaptcha.getResponse();
-      if (!captchaResponse) {
-        alert("⚠️ Por favor completa el reCAPTCHA antes de registrarte.");
-        return;
-      }
-
       const formData = new FormData(e.target);
-      formData.append("g-recaptcha-response", captchaResponse);
+
+  
 
       document.getElementById("loading-message").style.display = "block";
       document.getElementById("submit-button").disabled = true;
@@ -266,7 +239,6 @@
       try {
         const res = await fetch("/api/registrar", { method: "POST", body: formData });
         const data = await res.json();
-        grecaptcha.reset();
         alert(data.message || "Registro completado ✅");
         if (data.success) setTimeout(() => (window.location.href = "home.html"), 3000);
       } catch (err) {

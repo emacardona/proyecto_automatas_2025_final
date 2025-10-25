@@ -102,57 +102,12 @@ app.get("/", (req, res) => {
 // ============================
 // 📩 Registrar usuario (con validación reCAPTCHA + FaceAPI + PDF + correo)
 // ============================
+// ============================
+// 📩 Registrar usuario (SIN reCAPTCHA, conservando toda la lógica original)
+// ============================
 app.post("/api/registrar", upload.single("photo"), async (req, res) => {
   try {
-
-    // Si viene como objeto (FormData o Buffer), lo convertimos a string
-    // 🧩 Validar reCAPTCHA (idéntico al login)
-    // 🧩 Validar reCAPTCHA (con normalización del array)
-    let captchaToken = req.body["g-recaptcha-response"];
-    if (Array.isArray(captchaToken)) {
-      captchaToken = captchaToken[0]; // toma solo el primer token
-    }
-
-    console.log("🧩 Token recibido (registro):", captchaToken);
-
-    if (!captchaToken || typeof captchaToken !== "string") {
-      return res.status(400).json({ success: false, message: "⚠️ Falta verificación reCAPTCHA válida." });
-    }
-
-    console.log("🧩 Token recibido (registro):", captchaToken);
-
-    if (!captchaToken) {
-      return res.status(400).json({ success: false, message: "⚠️ Falta verificación reCAPTCHA." });
-    }
-
-    const verifyURL = "https://www.google.com/recaptcha/api/siteverify";
-    const params = new URLSearchParams();
-
-    const host = req.headers.host || "";
-    const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
-
-    const secretKey = isLocal
-      ? process.env.RECAPTCHA_SECRET_KEY
-      : process.env.RECAPTCHA_SECRET_KEY_PROD;
-
-    params.append("secret", secretKey);
-    params.append("response", captchaToken);
-
-    const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
-    const googleRes = await fetch(verifyURL, { method: "POST", body: params });
-    const data = await googleRes.json();
-
-    console.log("📬 Respuesta de Google reCAPTCHA:", data);
-
-    if (!data.success) {
-      console.warn("⚠️ Falló reCAPTCHA:", data);
-      return res.status(403).json({ success: false, message: "❌ Verificación reCAPTCHA fallida." });
-    }
-
-    console.log("✅ reCAPTCHA validado correctamente, continuando con registro...");
-
-
-    console.log("✅ reCAPTCHA validado correctamente, continuando con registro...");
+    console.log("🟢 Iniciando registro de usuario (sin reCAPTCHA)...");
 
     // ==============================================
     // 📦 Registro real (idéntico a tu versión previa)
@@ -175,6 +130,8 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
     const serverHost = process.env.HOST_PUBLIC || "http://localhost:3000";
     const qrURL = `${serverHost}/analizador.html?codigo=${codigoQR}`;
 
+    // 🔹 Generar el QR
+    await QRCode.toFile(qrPath, qrURL);
     const qrBuffer = fs.readFileSync(qrPath);
 
     let fotoFinalPath = fotoPath;
@@ -205,16 +162,14 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
           await fondoGris.writeAsync(segmentadoPath);
           console.log("🎨 Fondo gris aplicado al rostro segmentado.");
 
-          // 🎭 APLICAR FILTRO VISUAL SEGÚN SELECCIÓN (GENÉRICO)
+          // 🎭 Aplicar filtro visual (perro, lentes, mapache)
           const filtroSeleccionado = (filtro || "ninguno").toLowerCase();
           console.log("🎨 Aplicando filtro:", filtroSeleccionado);
 
           const overlayDir = path.join(__dirname, "filtros");
           const overlayPath = path.join(overlayDir, `${filtroSeleccionado}.png`);
-
           const canvasOriginal = await canvasLoadImage(segmentadoPath);
 
-          // 🔍 Detectar rostro con landmarks (necesario para aplicar overlays)
           let detection = await faceapi
             .detectSingleFace(canvasOriginal)
             .withFaceLandmarks()
@@ -234,62 +189,38 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
             console.log("✅ Rostro detectado correctamente con FaceAPI.");
           }
 
-          // 💡 Aplicar overlay genérico según filtro
           if (["perro", "lentes", "mapache"].includes(filtroSeleccionado) && detection && detection.landmarks) {
             const landmarks = detection.landmarks;
             const jimpOverlay = await Jimp.read(overlayPath);
             const jimpImg = await Jimp.read(segmentadoPath);
 
-            // 📏 Referencias anatómicas del rostro
             const leftEye = landmarks.getLeftEye();
             const rightEye = landmarks.getRightEye();
             const nose = landmarks.getNose();
-            const mouth = landmarks.getMouth();
             const jaw = landmarks.getJawOutline();
 
             const faceWidth = Math.abs(jaw[16].x - jaw[0].x);
-            const eyeDistance = Math.abs(rightEye[3].x - leftEye[0].x);
             const centerX = (jaw[0].x + jaw[16].x) / 2;
-            const suavizado = 0.9;
 
-            // 🎯 Configuración personalizada por filtro
             const ajustes = {
-              perro: {
-                scale: 1.5,               // tamaño general del filtro
-                offsetY: -faceWidth * 0.6 // sube más las orejas
-              },
-              lentes: {
-                scale: 0.85,
-                offsetY: -faceWidth * 0.35 // justo sobre los ojos
-              },
-              mapache: {
-                scale: 1.0,
-                offsetY: -faceWidth * 0.25 // centrado sobre ojos y nariz
-              }
+              perro: { scale: 1.5, offsetY: -faceWidth * 0.6 },
+              lentes: { scale: 0.85, offsetY: -faceWidth * 0.35 },
+              mapache: { scale: 1.0, offsetY: -faceWidth * 0.25 },
             };
 
             const cfg = ajustes[filtroSeleccionado];
             const newWidth = faceWidth * cfg.scale;
             const newHeight = newWidth * (jimpOverlay.bitmap.height / jimpOverlay.bitmap.width);
-
-
-            // 📍 Posicionamiento según el centro del rostro
             const posX = centerX - newWidth / 2;
             const posY = nose[0].y + cfg.offsetY;
 
             jimpOverlay.resize(newWidth, newHeight);
-            jimpImg.composite(jimpOverlay, posX, posY, {
-              mode: Jimp.BLEND_SOURCE_OVER,
-              opacitySource: suavizado,
-            });
+            jimpImg.composite(jimpOverlay, posX, posY, { mode: Jimp.BLEND_SOURCE_OVER, opacitySource: 0.9 });
 
-            // 💾 Guardar resultado filtrado
             const outputPath = path.join(__dirname, "public", "uploads", `${codigoQR}_rostro_filtrado.jpg`);
             await jimpImg.quality(90).writeAsync(outputPath);
             fotoFiltradaPath = outputPath;
             console.log(`✅ Filtro aplicado correctamente (${filtroSeleccionado}).`);
-          } else {
-            console.warn("⚠️ No se aplicó filtro o no se detectaron landmarks válidos.");
           }
         } else {
           console.warn("⚠️ No se recibió rostro segmentado desde el servidor.");
@@ -299,29 +230,19 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
       }
     }
 
-
     // 💾 Guardar usuario
     const sqlUsuario = `CALL sp_registrar_usuario(?, ?, ?, ?, ?, ?, ?, ?, @p_resultado, @p_mensaje);`;
-    // 🧩 Convertir imagen a base64 comprimido (versión ligera)
+
+    // 🧩 Convertir imagen a base64 comprimido
     let imgBase64 = null;
     if (fotoFinalPath && fs.existsSync(fotoFinalPath)) {
       const jimpImg = await Jimp.read(fotoFinalPath);
-
-      // Reducimos la resolución si es muy grande
-      const maxWidth = 300; // puedes ajustar
-      if (jimpImg.bitmap.width > maxWidth) {
-        jimpImg.resize(maxWidth, Jimp.AUTO);
-      }
-
-      // Comprimimos a calidad baja (60%)
+      const maxWidth = 300;
+      if (jimpImg.bitmap.width > maxWidth) jimpImg.resize(maxWidth, Jimp.AUTO);
       const tempPath = path.join(__dirname, "public", "uploads", `${codigoQR}_mini.jpg`);
       await jimpImg.quality(60).writeAsync(tempPath);
-
-      // Convertimos a base64 (versión compacta)
       const buffer = fs.readFileSync(tempPath);
       imgBase64 = buffer.toString("base64");
-
-      // Eliminamos la imagen temporal para no acumular archivos
       fs.unlinkSync(tempPath);
     }
 
@@ -333,25 +254,16 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
 
       const [rowsId] = await dbCentral.promise().query("SELECT id FROM usuarios WHERE email = ? LIMIT 1", [correo]);
       const usuarioId = rowsId?.[0]?.id;
-
       if (!usuarioId) {
         console.error("❌ Usuario no encontrado tras registro.");
         return res.status(500).json({ success: false, message: "Usuario no encontrado tras registro." });
       }
-      // ============================================================
-      // 🧩 Asignar rol por defecto en la base local (analizador_db)
-      // ============================================================
-      try {
-        const [rolRow] = await dbAnalisis.query(
-          "SELECT id FROM roles WHERE nombre = 'ANALISTA' LIMIT 1"
-        );
-        if (rolRow.length) {
-          const rolId = rolRow[0].id;
-          await dbAnalisis.query(
-            "INSERT INTO usuarios_roles (id_usuario, id_rol) VALUES (?, ?)",
-            [usuarioId, rolId]
-          );
 
+      // 🧩 Asignar rol por defecto
+      try {
+        const [rolRow] = await dbAnalisis.query("SELECT id FROM roles WHERE nombre = 'ANALISTA' LIMIT 1");
+        if (rolRow.length) {
+          await dbAnalisis.query("INSERT INTO usuarios_roles (id_usuario, id_rol) VALUES (?, ?)", [usuarioId, rolRow[0].id]);
           console.log("✅ Rol ANALISTA asignado al usuario", usuarioId);
         } else {
           console.warn("⚠️ No se encontró rol ANALISTA en la base local.");
@@ -360,7 +272,7 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
         console.error("⚠️ Error asignando rol por defecto:", errorRol.message);
       }
 
-
+      // 🧾 Guardar autenticación facial si existe
       if (encodingFacial) {
         await dbCentral.promise().query(
           `INSERT INTO autenticacion_facial (usuario_id, encoding_facial, imagen_referencia, activo, fecha_creacion)
@@ -370,15 +282,16 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
         console.log("✅ Registro facial guardado correctamente.");
       }
 
+      // 📦 Guardar QR
       const crypto = require("crypto");
       const qrHash = crypto.createHash("sha256").update(codigoQR).digest("hex");
-
       await dbCentral.promise().query(
         `INSERT INTO codigos_qr (usuario_id, codigo_qr, qr_hash, activo)
          VALUES (?, ?, ?, 1)`,
         [usuarioId, codigoQR, qrHash]
       );
 
+      // 📤 Generar PDF y enviar por correo
       await generarPDFsYEnviarCorreo({
         nombre1,
         apellido1,
@@ -394,13 +307,14 @@ app.post("/api/registrar", upload.single("photo"), async (req, res) => {
         qrPath,
       });
 
-      res.json({ success: true, message: "✅ Usuario registrado correctamente con verificación reCAPTCHA y QR vinculado." });
+      res.json({ success: true, message: "✅ Usuario registrado correctamente sin verificación reCAPTCHA." });
     });
   } catch (error) {
     console.error("❌ Error general en /api/registrar:", error);
     res.status(500).json({ success: false, message: "Error general del servidor." });
   }
 });
+
 
 
 
@@ -1480,36 +1394,6 @@ app.post("/api/login", async (req, res) => {
     if (!correo || !password) {
       return res.status(400).json({ success: false, message: "⚠️ Faltan datos: correo o contraseña" });
     }
-
-    if (!captchaToken) {
-      return res.status(400).json({ success: false, message: "⚠️ Falta verificación reCAPTCHA." });
-    }
-
-    // ============================
-    // 🔒 Validar reCAPTCHA
-    // ============================
-    const verifyURL = "https://www.google.com/recaptcha/api/siteverify";
-    const params = new URLSearchParams();
-    const host = req.headers.host || "";
-    const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
-
-    const secretKey = isLocal
-      ? process.env.RECAPTCHA_SECRET_KEY
-      : process.env.RECAPTCHA_SECRET_KEY_PROD;
-
-    params.append("secret", secretKey);
-    params.append("response", captchaToken);
-
-    const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fetch(...args));
-    const googleRes = await fetch(verifyURL, { method: "POST", body: params });
-    const data = await googleRes.json();
-
-    if (!data.success) {
-      console.warn("⚠️ Falló reCAPTCHA:", data);
-      return res.status(403).json({ success: false, message: "❌ Verificación reCAPTCHA fallida." });
-    }
-
-    console.log("✅ reCAPTCHA validado correctamente. Ejecutando SP...");
 
     // ============================
     // ⚙️ Ejecutar el procedimiento almacenado

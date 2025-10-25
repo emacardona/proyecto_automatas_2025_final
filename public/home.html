@@ -5,7 +5,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>UMG | Iniciar Sesión</title>
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
   <!-- Dependencias -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -225,8 +224,6 @@
           <input type="password" id="password" class="form-control" placeholder="Ingresa tu contraseña" required />
         </div>
 
-        <div id="recaptcha-container" class="mb-3"></div>
-
         <button type="submit" class="btn btn-login">
           <i class="fas fa-sign-in-alt me-2"></i> Ingresar
         </button>
@@ -269,7 +266,6 @@
       sessionStorage.setItem("sesionActiva", JSON.stringify(normalizado));
       console.log("🟢 Sesión guardada:", normalizado);
 
-      // 🔀 Redirección según rol
       if (normalizado.rol === "ADMIN") {
         window.location.href = "admin.html";
       } else if (normalizado.rol === "SUPERVISOR") {
@@ -280,43 +276,20 @@
     }
 
     // =========================
-    // 🔸 reCAPTCHA (versión corregida)
-    // =========================
-    // =========================
-    // 🔸 reCAPTCHA (versión final correcta)
-    // =========================
-    (function initRecaptcha() {
-      const siteKey = "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb"; // ✅ clave de producción válida
-
-      const container = document.getElementById("recaptcha-container");
-      if (container) {
-        container.innerHTML = `<div class="g-recaptcha" data-sitekey="${siteKey}"></div>`;
-      }
-    })();
-
-
-    // =========================
-    // 🧑‍💻 LOGIN POR CORREO
+    // 🧑‍💻 LOGIN POR CORREO (sin reCAPTCHA)
     // =========================
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const correo = document.getElementById('correo').value.trim();
       const password = document.getElementById('password').value.trim();
-      const captchaResponse = grecaptcha.getResponse();
-
-      if (!captchaResponse) {
-        alert("⚠️ Completa el reCAPTCHA.");
-        return;
-      }
 
       try {
         const res = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo, password, 'g-recaptcha-response': captchaResponse })
+          body: JSON.stringify({ correo, password })
         });
         const data = await res.json();
-        grecaptcha.reset();
 
         if (!data.success) return alert(`❌ ${data.message || "Credenciales incorrectas"}`);
 
@@ -408,5 +381,4 @@
     });
   </script>
 </body>
-
 </html>
