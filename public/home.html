@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,7 +10,8 @@
   <!-- Dependencias -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
 
   <style>
     :root {
@@ -19,6 +21,7 @@
       --dorado: #c5a200;
       --fondo: linear-gradient(135deg, #002244, #004b8d);
     }
+
     body {
       margin: 0;
       font-family: "Poppins", sans-serif;
@@ -28,6 +31,7 @@
       overflow: hidden;
       color: #333;
     }
+
     .left-panel {
       flex: 1;
       background: linear-gradient(145deg, #001b3a, #003366);
@@ -38,6 +42,7 @@
       text-align: center;
       padding: 2rem;
     }
+
     .right-panel {
       flex: 1;
       display: flex;
@@ -47,6 +52,7 @@
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(10px);
     }
+
     .card-login {
       background: rgba(255, 255, 255, 0.95);
       border-radius: 20px;
@@ -56,32 +62,141 @@
       width: 100%;
       text-align: center;
     }
-    .card-login img { width: 90px; margin-bottom: 10px; }
-    .card-login h2 { font-weight: 600; color: var(--azul); font-size: 1.5rem; margin-bottom: .5rem; }
-    .form-control { border-radius: 10px; border: 1px solid #ccc; padding: 10px 14px; transition: .2s; }
-    .form-control:focus { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.15); }
-    .btn-login, .btn-qr, .btn-face { width: 100%; font-weight: 600; border-radius: 10px; margin-top: 10px; padding: 10px; transition: .3s; }
-    .btn-login { background: var(--azul); color: white; }
-    .btn-login:hover { background: var(--azul-oscuro); transform: translateY(-2px); }
-    .btn-qr { background: #198754; color: white; }
-    .btn-qr:hover { background: #146c43; transform: translateY(-2px); }
-    .btn-face { background: #212529; color: white; }
-    .btn-face:hover { background: #000; transform: translateY(-2px); }
+
+    .card-login img {
+      width: 90px;
+      margin-bottom: 10px;
+    }
+
+    .card-login h2 {
+      font-weight: 600;
+      color: var(--azul);
+      font-size: 1.5rem;
+      margin-bottom: .5rem;
+    }
+
+    .form-control {
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      padding: 10px 14px;
+      transition: .2s;
+    }
+
+    .form-control:focus {
+      border-color: var(--azul);
+      box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.15);
+    }
+
+    .btn-login,
+    .btn-qr,
+    .btn-face {
+      width: 100%;
+      font-weight: 600;
+      border-radius: 10px;
+      margin-top: 10px;
+      padding: 10px;
+      transition: .3s;
+    }
+
+    .btn-login {
+      background: var(--azul);
+      color: white;
+    }
+
+    .btn-login:hover {
+      background: var(--azul-oscuro);
+      transform: translateY(-2px);
+    }
+
+    .btn-qr {
+      background: #198754;
+      color: white;
+    }
+
+    .btn-qr:hover {
+      background: #146c43;
+      transform: translateY(-2px);
+    }
+
+    .btn-face {
+      background: #212529;
+      color: white;
+    }
+
+    .btn-face:hover {
+      background: #000;
+      transform: translateY(-2px);
+    }
+
     #camera-container {
-      position: fixed; inset: 0; background: rgba(0,0,20,0.9); backdrop-filter: blur(10px);
-      display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 900;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 20, 0.9);
+      backdrop-filter: blur(10px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 900;
     }
-    #camera { width: 380px; max-width: 90%; border-radius: 15px; box-shadow: 0 0 25px rgba(0,255,255,0.25); border: 2px solid rgba(255,255,255,0.15); }
-    #face-detection-overlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; flex-direction: column; color: white; z-index: 950; text-align: center; }
+
+    #camera {
+      width: 380px;
+      max-width: 90%;
+      border-radius: 15px;
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.25);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+    }
+
+    #face-detection-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      color: white;
+      z-index: 950;
+      text-align: center;
+    }
+
     #face-detection-overlay .scanner {
-      position: relative; width: 160px; height: 160px; border: 3px solid rgba(0,255,255,0.4); border-radius: 50%;
-      display: flex; justify-content: center; align-items: center; overflow: hidden;
+      position: relative;
+      width: 160px;
+      height: 160px;
+      border: 3px solid rgba(0, 255, 255, 0.4);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
     }
+
     #face-detection-overlay .scanner::before {
-      content: ""; position: absolute; width: 100%; height: 8px; background: var(--cian);
-      top: 0; left: 0; animation: scanline 2s linear infinite; box-shadow: 0 0 10px var(--cian);
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 8px;
+      background: var(--cian);
+      top: 0;
+      left: 0;
+      animation: scanline 2s linear infinite;
+      box-shadow: 0 0 10px var(--cian);
     }
-    @keyframes scanline { 0%{top:0;} 50%{top:100%;} 100%{top:0;} }
+
+    @keyframes scanline {
+      0% {
+        top: 0;
+      }
+
+      50% {
+        top: 100%;
+      }
+
+      100% {
+        top: 0;
+      }
+    }
   </style>
 </head>
 
@@ -168,14 +283,21 @@
     // 🔸 reCAPTCHA
     // =========================
     (function initRecaptcha() {
-      const isLocal = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
-      const siteKey = isLocal
-        ? "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb"
-        : "TU_CLAVE_SITE_KEY_PROD_AQUI";
-      const container = document.getElementById("recaptcha-container");
-      container.innerHTML = `<div class="g-recaptcha" data-sitekey="${siteKey}"></div>`;
-    })();
+      const isLocal =
+        window.location.hostname.includes("localhost") ||
+        window.location.hostname.includes("127.0.0.1");
 
+      // 🔹 Claves reales
+      const siteKey = isLocal
+        ? "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb" // 👉 clave local
+        : "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgvI7_OTtgMb"; // 👉 clave de producción
+
+      const container = document.getElementById("recaptcha-container");
+      if (container) {
+        container.innerHTML = <div class="g-recaptcha" data-sitekey="${siteKey}"></div>;
+        grecaptcha.render(container.firstChild);
+      }
+    })();
     // =========================
     // 🧑‍💻 LOGIN POR CORREO
     // =========================
@@ -289,4 +411,5 @@
     });
   </script>
 </body>
+
 </html>
