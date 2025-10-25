@@ -1,0 +1,47 @@
+# ===================================
+# 🚀 Dockerfile.dev — Versión completa y estable
+# ===================================
+FROM node:20-slim
+
+# Instalar Python y dependencias necesarias para Puppeteer
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    pkg-config \
+    libx11-dev \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxi6 \
+    libxtst6 \
+    libnss3 \
+    libxrandr2 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libcups2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libxss1 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Carpeta de trabajo
+WORKDIR /app
+
+# Copiar dependencias e instalar nodemon
+COPY package*.json ./
+RUN npm install && npm install --save-dev nodemon
+
+# Copiar el resto del código
+COPY . .
+
+# Variables de entorno
+ENV NODE_ENV=development
+EXPOSE 3000
+
+# Comando principal
+CMD ["npm", "run", "dev"]

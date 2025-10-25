@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Panel de Administración | Sistema UMG</title>
+
+    <!-- Bootstrap / Iconos / Fuente / Chart -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #f0f4ff, #e9efff);
+            font-family: "Poppins", sans-serif;
+        }
+
+        header {
+            background: linear-gradient(135deg, #003366, #0055a5);
+            color: #fff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: #c0392b;
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #a93226;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .card {
+            border-radius: 14px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.25s ease-in-out;
+            border: 0;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-container {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-top: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-in-out;
+        }
+
+        .stats-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .stat-pill {
+            border-radius: 12px;
+            background: #f8faff;
+            border: 1px solid #d4e0ff;
+            padding: 18px;
+            flex: 1 1 250px;
+            transition: all 0.25s ease;
+        }
+
+        .stat-pill:hover {
+            background: #eaf0ff;
+            transform: scale(1.03);
+        }
+
+        .stat-label {
+            font-size: .9rem;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            color: #002b5b;
+            font-weight: 600;
+        }
+
+        canvas {
+            max-height: 250px;
+            margin-top: 25px;
+        }
+
+        .chart-info {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #555;
+            margin-top: 8px;
+        }
+
+        .d-none {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 🔹 CABECERA -->
+    <header>
+        <h1>
+            <i class='bx bxs-cog'></i>
+            <span>Panel de Administración</span>
+            <span id="adminNombre" style="font-size:.9rem;font-weight:300;opacity:.9"></span>
+        </h1>
+        <button class="logout-btn" id="btnLogout">
+            <i class='bx bx-log-out-circle'></i>
+            <span> Cerrar sesión</span>
+        </button>
+    </header>
+
+    <!-- 🔹 CONTENIDO PRINCIPAL -->
+    <main class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card p-3 text-center">
+                    <i class='bx bxs-user-detail text-primary mb-2' style="font-size:2rem"></i>
+                    <h5>Gestión de Usuarios</h5>
+                    <p class="text-muted" style="font-size:.9rem">Ver / eliminar usuarios registrados.</p>
+                    <button class="btn btn-primary w-100" id="btnVerUsuarios">Ver Usuarios</button>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-3 text-center">
+                    <i class='bx bxs-bar-chart-alt-2 text-success mb-2' style="font-size:2rem"></i>
+                    <h5>Estadísticas del Sistema</h5>
+                    <p class="text-muted" style="font-size:.9rem">Totales y actividad global.</p>
+                    <button class="btn btn-success w-100" id="btnVerEstadisticas">Ver Estadísticas</button>
+                </div>
+            </div>
+
+            <!-- 🔹 ESTADÍSTICAS -->
+            <div id="statsBox" class="stats-container d-none">
+                <h4 class="mb-3">
+                    <i class='bx bxs-bar-chart-alt-2 text-success'></i>
+                    Resumen del Sistema
+                </h4>
+
+                <div class="d-flex flex-wrap gap-3 mb-4">
+                    <div class="stat-pill">
+                        <div class="stat-label"><i class='bx bxs-user'></i> Usuarios</div>
+                        <div class="stat-value" id="statUsuarios">--</div>
+                    </div>
+
+                    <div class="stat-pill">
+                        <div class="stat-label"><i class='bx bxs-id-card'></i> Sesiones</div>
+                        <div class="stat-value" id="statSesiones">--</div>
+                    </div>
+
+                    <div class="stat-pill">
+                        <div class="stat-label"><i class='bx bxs-bell'></i> Notificaciones</div>
+                        <div class="stat-value" id="statNotificaciones">--</div>
+                    </div>
+
+                    <div class="stat-pill">
+                        <div class="stat-label"><i class='bx bx-time-five'></i> Última actualización</div>
+                        <div class="stat-value" id="statFecha" style="font-size:1rem">--</div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <canvas id="chartUsuarios"></canvas>
+                        <p id="infoUsuarios" class="chart-info"></p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <canvas id="chartSesiones"></canvas>
+                        <p id="infoSesiones" class="chart-info"></p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <canvas id="chartNotificaciones"></canvas>
+                        <p id="infoNotificaciones" class="chart-info"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🔹 TABLA DE USUARIOS -->
+            <div id="tablaUsuarios" class="table-container d-none">
+                <h4 class="mb-3">
+                    <i class='bx bxs-user'></i>
+                    Lista de Usuarios Registrados
+                </h4>
+
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Teléfono</th>
+                                <th>Activo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuariosBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Sin datos cargados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+    </main>
+
+    <!-- 🔔 SweetAlert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // =============================
+        // 🔹 ALERTAS GENÉRICAS
+        // =============================
+        function alerta(icon, title, text) {
+            Swal.fire({ icon, title, text, confirmButtonColor: '#003366' });
+        }
+
+        // =============================
+        // 🔹 VALIDAR SESIÓN ADMIN
+        // =============================
+        async function validarSesion() {
+            try {
+                const res = await fetch("/session");
+                if (!res.ok) throw new Error("No autorizado");
+                const data = await res.json();
+                if (!data || data.rol !== "ADMIN") throw new Error("Acceso restringido");
+                document.getElementById("adminNombre").textContent = `· ${data.nombre} (${data.rol})`;
+                window.__SESSION = data;
+            } catch (err) {
+                alerta("error", "Sesión no válida", "Inicia sesión nuevamente.");
+                setTimeout(() => (window.location.href = "/"), 2000);
+            }
+        }
+
+        // =============================
+        // 🔹 VER ESTADÍSTICAS
+        // =============================
+        async function verEstadisticas() {
+            const tabla = document.getElementById("tablaUsuarios");
+            const stats = document.getElementById("statsBox");
+            tabla.classList.add("d-none");
+            stats.classList.remove("d-none");
+            stats.classList.add("show");
+
+            try {
+                const res = await fetch("/api/estadisticas");
+                if (!res.ok) throw new Error("Error estadísticas");
+                const data = await res.json();
+
+                const u = data.usuarios || {};
+                const s = data.sesiones || {};
+                const n = data.notificaciones || {};
+
+                document.getElementById("statUsuarios").textContent = u.totalUsuarios || 0;
+                document.getElementById("statSesiones").textContent = s.totalSesiones || 0;
+                document.getElementById("statNotificaciones").textContent = n.totalNotificaciones || 0;
+                document.getElementById("statFecha").textContent = data.fecha || "--";
+
+                renderCharts(u, s, n);
+            } catch (err) {
+                console.error(err);
+                alerta("error", "Error", "No se pudieron obtener las estadísticas.");
+            }
+        }
+
+        // =============================
+        // 🔹 GENERAR GRÁFICAS
+        // =============================
+        function renderCharts(u, s, n) {
+            // 1️⃣ USUARIOS
+            new Chart(document.getElementById("chartUsuarios"), {
+                type: "doughnut",
+                data: {
+                    labels: ["Activos", "Inactivos"],
+                    datasets: [{
+                        data: [u.usuariosActivos || 0, u.usuariosInactivos || 0],
+                        backgroundColor: ["#198754", "#dc3545"]
+                    }]
+                },
+                options: { plugins: { legend: { position: "bottom" } } }
+            });
+            document.getElementById("infoUsuarios").textContent =
+                `De ${u.totalUsuarios || 0} usuarios registrados, ${u.usuariosActivos || 0} están activos y ${u.usuariosInactivos || 0} inactivos.`;
+
+            // 2️⃣ SESIONES
+            new Chart(document.getElementById("chartSesiones"), {
+                type: "bar",
+                data: {
+                    labels: ["Password", "Facial", "QR"],
+                    datasets: [{
+                        data: [s.loginPassword || 0, s.loginFacial || 0, s.loginQR || 0],
+                        backgroundColor: ["#0d6efd", "#20c997", "#ffc107"]
+                    }]
+                },
+                options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+            document.getElementById("infoSesiones").textContent =
+                `Se registraron ${s.totalSesiones || 0} sesiones totales. El método más usado es ${(s.loginPassword >= s.loginFacial && s.loginPassword >= s.loginQR) ? "Password" :
+                    (s.loginFacial >= s.loginQR ? "Facial" : "QR")
+                }.`;
+
+            // 3️⃣ NOTIFICACIONES (solo correo)
+            // 3️⃣ NOTIFICACIONES (solo correo + WhatsApp)
+            new Chart(document.getElementById("chartNotificaciones"), {
+                type: "doughnut",
+                data: {
+                    labels: ["Email", "WhatsApp"],
+                    datasets: [{
+                        data: [n.notifEmail || 0, n.notifWhatsApp || 0],
+                        backgroundColor: ["#0d6efd", "#25D366"] // Azul correo, verde WhatsApp
+                    }]
+                },
+                options: { plugins: { legend: { position: "bottom" } } }
+            });
+            document.getElementById("infoNotificaciones").textContent =
+                `${n.notifEmail || 0} notificaciones activas por correo y ${n.notifWhatsApp || 0} por WhatsApp.`;
+
+        }
+
+        // =============================
+        // 🔹 GESTIÓN DE USUARIOS
+        // =============================
+        async function verUsuarios() {
+            const tabla = document.getElementById("tablaUsuarios");
+            const stats = document.getElementById("statsBox");
+            stats.classList.add("d-none");
+            tabla.classList.remove("d-none");
+
+            const tbody = document.getElementById("usuariosBody");
+            tbody.innerHTML = "<tr><td colspan='6' class='text-center text-muted'>Cargando...</td></tr>";
+
+            try {
+                const res = await fetch("/api/usuarios");
+                if (!res.ok) throw new Error("Error cargando usuarios");
+                const data = await res.json();
+
+                if (!Array.isArray(data) || !data.length) {
+                    tbody.innerHTML = "<tr><td colspan='6' class='text-center text-muted'>No hay usuarios.</td></tr>";
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                data.forEach(u => {
+                    const activo = u.activo ? "✅" : "❌";
+                    tbody.innerHTML += `
+            <tr>
+              <td>${u.id}</td>
+              <td>${u.nombre_completo}</td>
+              <td>${u.email}</td>
+              <td>${u.telefono || "-"}</td>
+              <td>${activo}</td>
+              <td>
+  <button class="btn btn-sm ${u.activo ? 'btn-warning' : 'btn-success'} me-2"
+          onclick="cambiarEstado(${u.id}, ${u.activo ? 0 : 1})">
+    <i class='bx ${u.activo ? 'bx-user-x' : 'bx-user-check'}'></i>
+  </button>
+  <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${u.id})">
+    <i class='bx bx-trash'></i>
+  </button>
+</td>
+
+            </tr>
+          `;
+                });
+            } catch {
+                alerta("error", "Error", "No se pudieron cargar los usuarios.");
+            }
+        }
+
+        async function eliminarUsuario(id) {
+            const confirm = await Swal.fire({
+                icon: "warning", title: "¿Eliminar usuario?", showCancelButton: true,
+                confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar", confirmButtonColor: "#c0392b"
+            });
+            if (!confirm.isConfirmed) return;
+            try {
+                const res = await fetch(`/api/usuarios/${id}`, { method: "DELETE" });
+                if (!res.ok) throw new Error("Error eliminando usuario");
+                alerta("success", "Eliminado", "El usuario fue eliminado.");
+                verUsuarios();
+            } catch {
+                alerta("error", "Error", "No se pudo eliminar este usuario.");
+            }
+        }
+
+        function verParametros() {
+            Swal.fire({
+                title: "<i class='bx bxs-cog bx-spin'></i> Configuración del Sistema",
+                html: `
+              <div style="text-align:left; font-size:0.95rem; line-height:1.6; padding:10px;">
+            <p>🔧 Administrar módulos del sistema:</p>
+
+        <button id="btnBackup" class="btn btn-outline-primary w-100 mb-2">
+          <i class='bx bxs-data'></i> Respaldo y Auditoría
+        </button>
+
+        <button id="btnMensajes" class="btn btn-outline-success w-100">
+  <i class='bx bxs-envelope'></i> Configuración de Correo
+    </button>
+      </div>
+    `,
+                showConfirmButton: false,
+                width: 550,
+                background: "#f9fbff",
+                didOpen: () => {
+                    document.getElementById("btnBackup").addEventListener("click", generarBackup);
+                    document.getElementById("btnMensajes").addEventListener("click", panelMensajes);
+                }
+            });
+        }
+        // =============================
+        // 💾 GENERAR RESPALDO REAL (DESCARGA JSON)
+        // =============================
+        async function generarBackup() {
+            try {
+                Swal.fire({
+                    title: "💾 Generando respaldo...",
+                    text: "Por favor espera unos segundos mientras se crea el archivo JSON.",
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                const res = await fetch("/api/respaldo");
+                if (!res.ok) throw new Error("Error generando respaldo.");
+
+                // ✅ Crear descarga directa del archivo JSON
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `respaldo_sistema_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Respaldo generado",
+                    text: "El respaldo fue descargado correctamente en formato JSON.",
+                    confirmButtonColor: "#003366"
+                });
+            } catch (err) {
+                console.error("❌ Error generando respaldo:", err);
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "No se pudo generar el respaldo.",
+                    confirmButtonColor: "#c0392b"
+                });
+            }
+        }
+
+        // ==============================================
+        // 📧 PANEL DE CONFIGURACIÓN DE CORREO
+        // ==============================================
+        // ==============================================
+        // ✉️ PANEL DE CAMBIO DE CORREO DE USUARIO
+        // ==============================================
+        async function panelMensajes() {
+            const { value: formValues } = await Swal.fire({
+                title: "<i class='bx bxs-envelope'></i> Cambio de Correo del Usuario",
+                html: `
+      <div style="text-align:left;">
+        <label class="form-label mt-2">Correo actual:</label>
+        <input id="correoActual" class="form-control" placeholder="correo-actual@ejemplo.com">
+
+        <label class="form-label mt-2">Nuevo correo:</label>
+        <input id="correoNuevo" class="form-control" placeholder="nuevo-correo@ejemplo.com">
+      </div>
+    `,
+                confirmButtonText: "Actualizar correo",
+                confirmButtonColor: "#003366",
+                showCancelButton: true,
+                cancelButtonText: "Cancelar",
+                preConfirm: () => {
+                    const correoActual = document.getElementById("correoActual").value.trim();
+                    const correoNuevo = document.getElementById("correoNuevo").value.trim();
+                    if (!correoActual || !correoNuevo) {
+                        Swal.showValidationMessage("Debes llenar ambos campos.");
+                        return false;
+                    }
+                    return { correoActual, correoNuevo };
+                }
+            });
+
+            if (!formValues) return;
+
+            try {
+                const res = await fetch("/api/usuarios/cambiar-correo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(formValues),
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Error actualizando correo");
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Correo actualizado",
+                    text: "El correo del usuario fue cambiado correctamente.",
+                    confirmButtonColor: "#003366",
+                });
+            } catch (err) {
+                console.error("❌ Error:", err);
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: err.message || "No se pudo actualizar el correo.",
+                    confirmButtonColor: "#c0392b",
+                });
+            }
+        }
+
+
+
+
+        // ===============================================
+        // 🔴 CERRAR SESIÓN (solo en cliente, sin servidor)
+        // ===============================================
+        async function cerrarSesion() {
+            const confirm = await Swal.fire({
+                icon: "question",
+                title: "¿Deseas cerrar sesión?",
+                text: "Tu sesión actual se cerrará y volverás al inicio de sesión.",
+                showCancelButton: true,
+                confirmButtonText: "Sí, cerrar sesión",
+                cancelButtonText: "Cancelar",
+                confirmButtonColor: "#c0392b"
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            // 🧹 Eliminar toda la información local de sesión
+            sessionStorage.clear();
+            localStorage.clear();
+
+            // 🚪 Redirigir al inicio (pantalla de login)
+            Swal.fire({
+                icon: "success",
+                title: "Sesión cerrada",
+                text: "Has cerrado sesión correctamente.",
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            setTimeout(() => {
+                window.location.href = "home.html"; // cambia por la ruta de tu login si es diferente
+            }, 1500);
+        }
+
+        // =============================
+        // 🔹 EVENTOS / INICIALIZACIÓN
+        // =============================
+        document.getElementById("btnVerUsuarios").addEventListener("click", verUsuarios);
+        document.getElementById("btnVerEstadisticas").addEventListener("click", verEstadisticas);
+        document.getElementById("btnLogout").addEventListener("click", cerrarSesion);
+
+        (async () => { await validarSesion(); })();
+        // ===============================================
+        // 🟢 CAMBIAR ESTADO DE USUARIO (activo/suspendido)
+        // ===============================================
+        async function cambiarEstado(id, nuevoEstado) {
+            const accion = nuevoEstado === 1 ? "activar" : "suspender";
+
+            const confirm = await Swal.fire({
+                icon: "question",
+                title: `¿Deseas ${accion} este usuario?`,
+                showCancelButton: true,
+                confirmButtonText: `Sí, ${accion}`,
+                cancelButtonText: "Cancelar",
+                confirmButtonColor: nuevoEstado === 1 ? "#198754" : "#f39c12"
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            try {
+                const res = await fetch("/api/usuarios/estado", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id, activo: nuevoEstado })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Error desconocido");
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Estado actualizado",
+                    text: data.message || "El estado del usuario fue actualizado.",
+                    confirmButtonColor: "#003366"
+                });
+
+                // recargar la tabla para ver el cambio
+                verUsuarios();
+            } catch (err) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: err.message || "No se pudo actualizar el estado.",
+                    confirmButtonColor: "#c0392b"
+                });
+            }
+        }
+
+    </script>
+</body>
+
+</html>

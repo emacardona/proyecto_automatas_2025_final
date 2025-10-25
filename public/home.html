@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UMG | Iniciar Sesión</title>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+  <!-- Dependencias -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --azul: #003366;
+      --azul-oscuro: #002244;
+      --cian: #00e0ff;
+      --dorado: #c5a200;
+      --fondo: linear-gradient(135deg, #002244, #004b8d);
+    }
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: var(--fondo);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      color: #333;
+    }
+    .left-panel {
+      flex: 1;
+      background: linear-gradient(145deg, #001b3a, #003366);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+      padding: 2rem;
+    }
+    .right-panel {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+    }
+    .card-login {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+      padding: 2.5rem;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .card-login img { width: 90px; margin-bottom: 10px; }
+    .card-login h2 { font-weight: 600; color: var(--azul); font-size: 1.5rem; margin-bottom: .5rem; }
+    .form-control { border-radius: 10px; border: 1px solid #ccc; padding: 10px 14px; transition: .2s; }
+    .form-control:focus { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(0, 51, 102, 0.15); }
+    .btn-login, .btn-qr, .btn-face { width: 100%; font-weight: 600; border-radius: 10px; margin-top: 10px; padding: 10px; transition: .3s; }
+    .btn-login { background: var(--azul); color: white; }
+    .btn-login:hover { background: var(--azul-oscuro); transform: translateY(-2px); }
+    .btn-qr { background: #198754; color: white; }
+    .btn-qr:hover { background: #146c43; transform: translateY(-2px); }
+    .btn-face { background: #212529; color: white; }
+    .btn-face:hover { background: #000; transform: translateY(-2px); }
+    #camera-container {
+      position: fixed; inset: 0; background: rgba(0,0,20,0.9); backdrop-filter: blur(10px);
+      display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 900;
+    }
+    #camera { width: 380px; max-width: 90%; border-radius: 15px; box-shadow: 0 0 25px rgba(0,255,255,0.25); border: 2px solid rgba(255,255,255,0.15); }
+    #face-detection-overlay { position: absolute; inset: 0; display: none; justify-content: center; align-items: center; flex-direction: column; color: white; z-index: 950; text-align: center; }
+    #face-detection-overlay .scanner {
+      position: relative; width: 160px; height: 160px; border: 3px solid rgba(0,255,255,0.4); border-radius: 50%;
+      display: flex; justify-content: center; align-items: center; overflow: hidden;
+    }
+    #face-detection-overlay .scanner::before {
+      content: ""; position: absolute; width: 100%; height: 8px; background: var(--cian);
+      top: 0; left: 0; animation: scanline 2s linear infinite; box-shadow: 0 0 10px var(--cian);
+    }
+    @keyframes scanline { 0%{top:0;} 50%{top:100%;} 100%{top:0;} }
+  </style>
+</head>
+
+<body>
+  <div class="left-panel">
+    <div>
+      <h1>Universidad Mariano Gálvez</h1>
+      <p>Formando profesionales con excelencia, liderazgo y valores cristianos.</p>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="card-login">
+      <img src="img/logo_umg.png" alt="Logo UMG" />
+      <h2><i class="fas fa-user-graduate me-2"></i>Portal de Acceso</h2>
+      <p>Ingrese sus credenciales para continuar</p>
+
+      <!-- LOGIN -->
+      <form id="login-form">
+        <div class="mb-3 text-start">
+          <label for="correo" class="form-label">Correo Electrónico</label>
+          <input type="email" id="correo" class="form-control" placeholder="ejemplo@correo.com" required />
+        </div>
+        <div class="mb-3 text-start">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" id="password" class="form-control" placeholder="Ingresa tu contraseña" required />
+        </div>
+
+        <div id="recaptcha-container" class="mb-3"></div>
+
+        <button type="submit" class="btn btn-login">
+          <i class="fas fa-sign-in-alt me-2"></i> Ingresar
+        </button>
+      </form>
+
+      <button id="qr-login" class="btn btn-qr"><i class="fas fa-qrcode me-2"></i> Ingresar con QR</button>
+      <button id="face-login" class="btn btn-face"><i class="fas fa-camera me-2"></i> Ingresar con Rostro</button>
+
+      <p class="mt-3 mb-0">¿No tienes cuenta?
+        <a href="registro.html" class="fw-semibold text-primary">Regístrate aquí</a>
+      </p>
+    </div>
+  </div>
+
+  <div id="camera-container">
+    <video id="camera" autoplay muted playsinline></video>
+    <div id="face-detection-overlay">
+      <div class="scanner"></div>
+      <span>Detectando rostro...</span>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script>
+    // =========================
+    // 🔹 FUNCIÓN GLOBAL DE SESIÓN
+    // =========================
+    function guardarSesionYRedirigir(usuario) {
+      if (!usuario) return alert("⚠️ No se recibieron datos del usuario.");
+
+      const u = usuario || {};
+      const normalizado = {
+        id: u.id || u.Id_Usuario || u.id_usuario || null,
+        nombre_completo: u.nombre_completo || u.NombreUsuario || u.Usuario || "Usuario",
+        email: u.email || u.Email_Usuario || u.correo || "",
+        telefono: u.telefono || u.Celular_Usuario || "",
+        rol: (u.rol || u.id_rol_usuario || "USUARIO").toUpperCase()
+      };
+
+      sessionStorage.setItem("sesionActiva", JSON.stringify(normalizado));
+      console.log("🟢 Sesión guardada:", normalizado);
+
+      // 🔀 Redirección según rol
+      if (normalizado.rol === "ADMIN") {
+        window.location.href = "admin.html";
+      } else if (normalizado.rol === "SUPERVISOR") {
+        window.location.href = "supervisor.html";
+      } else {
+        window.location.href = "analizador.html";
+      }
+    }
+
+    // =========================
+    // 🔸 reCAPTCHA
+    // =========================
+    (function initRecaptcha() {
+      const isLocal = window.location.hostname.includes("localhost") || window.location.hostname.includes("127.0.0.1");
+      const siteKey = isLocal
+        ? "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb"
+        : "TU_CLAVE_SITE_KEY_PROD_AQUI";
+      const container = document.getElementById("recaptcha-container");
+      container.innerHTML = `<div class="g-recaptcha" data-sitekey="${siteKey}"></div>`;
+    })();
+
+    // =========================
+    // 🧑‍💻 LOGIN POR CORREO
+    // =========================
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const correo = document.getElementById('correo').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const captchaResponse = grecaptcha.getResponse();
+
+      if (!captchaResponse) {
+        alert("⚠️ Completa el reCAPTCHA.");
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo, password, 'g-recaptcha-response': captchaResponse })
+        });
+        const data = await res.json();
+        grecaptcha.reset();
+
+        if (!data.success) return alert(`❌ ${data.message || "Credenciales incorrectas"}`);
+
+        guardarSesionYRedirigir(data.usuario);
+
+      } catch (err) {
+        console.error(err);
+        alert("⚠️ Error al conectar con el servidor.");
+      }
+    });
+
+    // =========================
+    // 🔳 LOGIN CON QR
+    // =========================
+    document.getElementById('qr-login').addEventListener('click', async () => {
+      const video = document.getElementById('camera');
+      const container = document.getElementById('camera-container');
+      container.style.display = 'flex';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        async function scan() {
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            const code = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
+            if (code) {
+              const codigo = code.data.trim();
+              alert(`📱 Código detectado: ${codigo}`);
+              stream.getTracks().forEach(t => t.stop());
+              const res = await fetch('/api/login-qr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo })
+              });
+              const data = await res.json();
+              container.style.display = 'none';
+              if (data.success) {
+                guardarSesionYRedirigir(data.usuario);
+              } else alert(`❌ ${data.message}`);
+            }
+          }
+          requestAnimationFrame(scan);
+        }
+        scan();
+      } catch {
+        alert("⚠️ No se pudo acceder a la cámara.");
+        container.style.display = 'none';
+      }
+    });
+
+    // =========================
+    // 🤖 LOGIN CON ROSTRO
+    // =========================
+    document.getElementById('face-login').addEventListener('click', async () => {
+      const video = document.getElementById('camera');
+      const overlay = document.getElementById('face-detection-overlay');
+      const container = document.getElementById('camera-container');
+      container.style.display = 'flex';
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        overlay.style.display = 'flex';
+        setTimeout(async () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg'));
+          const formData = new FormData();
+          formData.append('rostro', blob);
+          const res = await fetch('/api/login-face', { method: 'POST', body: formData });
+          const data = await res.json();
+          stream.getTracks().forEach(t => t.stop());
+          overlay.style.display = 'none';
+          container.style.display = 'none';
+          if (data.success) {
+            guardarSesionYRedirigir(data.usuario);
+          } else alert(`❌ ${data.message}`);
+        }, 3000);
+      } catch {
+        alert("⚠️ No se pudo acceder a la cámara.");
+        container.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

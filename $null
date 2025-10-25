@@ -1,0 +1,4 @@
+Error response from daemon: No such container: faceapi_app
+Error response from daemon: No such container: faceapi_app_dev
+Error response from daemon: No such container: db_faceapi
+Error response from daemon: No such container: db_faceapi_dev
