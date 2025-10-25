@@ -6,7 +6,8 @@
 // ===============================
 // 🔧 CONFIGURACIÓN GLOBAL
 // ===============================
-const API_URL = "http://localhost:3000"; // Cambiar en producción a tu dominio
+const API_URL = "http://213.218.240.116:3000";
+
 let labeledFaceDescriptors = [];
 let modelsLoaded = false;
 let selectedEmpresaId = null;
@@ -695,7 +696,6 @@ if (btnGuardar) {
 }
 
 // 📧💬 ENVIAR REPORTE (versión segura y compatible con backend actualizado)
-// 📧💬 ENVIAR REPORTE (versión segura y compatible con backend actualizado)
 async function enviarReporte(medio) {
   if (!datosActuales) {
     mostrarError("⚠️ No hay datos para enviar.");
@@ -704,7 +704,7 @@ async function enviarReporte(medio) {
 
   const usuarioSesion = JSON.parse(sessionStorage.getItem("sesionActiva") || "{}");
 
-  // Validaciones básicas
+  // 🧩 Validaciones
   if ((medio === "email" || medio === "ambos") && !usuarioSesion.email) {
     mostrarError("❌ No hay correo electrónico asociado al usuario.");
     return;
@@ -723,7 +723,16 @@ async function enviarReporte(medio) {
       didOpen: () => Swal.showLoading()
     });
 
-    const res = await fetch("/enviar-correo", {
+    // 🌐 Enviar al backend real
+    console.log("📡 Enviando reporte a:", `${API_URL}/enviar-correo`);
+    console.log("🧾 Datos enviados:", {
+      correo: usuarioSesion.email,
+      nombre: usuarioSesion.nombre_completo || usuarioSesion.nombre,
+      idioma: datosActuales.idioma,
+      totalPalabras: datosActuales.totalPalabras
+    });
+
+    const res = await fetch(`${API_URL}/enviar-correo`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -742,11 +751,13 @@ async function enviarReporte(medio) {
       throw new Error("El servidor devolvió una respuesta inesperada (no JSON).");
     }
 
+    console.log("📬 Respuesta del servidor:", data);
+
     if (!res.ok || !data.success) {
       throw new Error(data.message || "No se pudo enviar el reporte.");
     }
 
-    // Cerrar modal si existe
+    // ✅ Cerrar modal si existe
     const modalElement = document.getElementById("modalEnvioReporte");
     if (modalElement && typeof bootstrap !== "undefined") {
       const modal = bootstrap.Modal.getInstance(modalElement);
@@ -771,8 +782,6 @@ async function enviarReporte(medio) {
     });
   }
 }
-
-
 
 
 // ===============================
