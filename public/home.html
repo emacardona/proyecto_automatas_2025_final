@@ -280,25 +280,21 @@
     }
 
     // =========================
-    // 🔸 reCAPTCHA
+    // 🔸 reCAPTCHA (versión corregida)
+    // =========================
+    // =========================
+    // 🔸 reCAPTCHA (versión final correcta)
     // =========================
     (function initRecaptcha() {
-      const isLocal =
-        window.location.hostname.includes("localhost") ||
-        window.location.hostname.includes("127.0.0.1");
-
-      // 🔹 Claves reales
-      const siteKey = isLocal
-        ? "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb" // 👉 clave local
-        : "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgvI7_OTtgMb"; // 👉 clave de producción
+      const siteKey = "6LfZ8_QrAAAAAL1DTEdy_MQg-tlZHgyI7_OTtgMb"; // ✅ clave de producción válida
 
       const container = document.getElementById("recaptcha-container");
       if (container) {
-
         container.innerHTML = `<div class="g-recaptcha" data-sitekey="${siteKey}"></div>`;
-        grecaptcha.render(container.firstChild);
       }
     })();
+
+
     // =========================
     // 🧑‍💻 LOGIN POR CORREO
     // =========================
