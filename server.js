@@ -521,9 +521,8 @@ async function renderHtmlToPdf(htmlString, outPath) {
   }
 }
 
-
 // ============================
-// 🧾 Generar PDFs y enviar por correo (Puppeteer)
+// 🧾 Generar PDFs y enviar por correo (Puppeteer + Gmail seguro)
 // ============================
 async function generarPDFsYEnviarCorreo({
   nombre1,
@@ -588,21 +587,36 @@ async function generarPDFsYEnviarCorreo({
     await renderHtmlToPdf(htmlSinFiltro, pdfSinFiltroPath);
     console.log("✅ PDF sin filtro generado:", pdfSinFiltroPath);
 
+    // ===============================
+    // 📧 CONFIGURAR TRANSPORTE GMAIL
+    // ===============================
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false, // STARTTLS
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      }
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
 
-    await transporter.sendMail({
-      from: '"UMG - Registro" <joseemmanuelfelipefranco@gmail.com>',
+    // ✅ Verificar conexión SMTP antes de enviar
+    await transporter.verify();
+    console.log("✅ Conexión SMTP con Gmail establecida correctamente.");
+
+    const info = await transporter.sendMail({
+      from: `"UMG - Registro" <${process.env.EMAIL_USER}>`,
       to: correo,
       subject: "🎓 Carné Universitario UMG — Registro exitoso",
-      html: `<h3>Bienvenido ${nombre1} ${apellido1}</h3>
-             <p>Adjuntamos tus carnés (con y sin filtro).</p>
-             <p>Escanea tu código QR para iniciar sesión o verificar tu identidad.</p>`,
+      html: `
+        <h3>Bienvenido/a ${nombre1} ${apellido1}</h3>
+        <p>Tu registro fue exitoso en el sistema UMG.</p>
+        <p>Adjuntamos tus carnés (con y sin filtro) y tu código QR.</p>
+        <p style="color:#003366;">Gracias por formar parte de la UMG 💙</p>
+      `,
       attachments: [
         { filename: "carnet_umg_con_filtro.pdf", path: pdfConFiltroPath },
         { filename: "carnet_umg_sin_filtro.pdf", path: pdfSinFiltroPath },
@@ -611,8 +625,13 @@ async function generarPDFsYEnviarCorreo({
     });
 
     console.log(`📧 Correo enviado correctamente a ${correo}`);
+    console.log("🧾 ID del mensaje:", info.messageId);
+
   } catch (error) {
-    console.error("❌ Error al generar/enviar PDFs con Puppeteer:", error);
+    console.error("❌ Error al generar/enviar PDFs con Puppeteer:");
+    console.error("Tipo:", error.name);
+    console.error("Mensaje:", error.message);
+    if (error.response) console.error("📨 Respuesta del servidor SMTP:", error.response);
   }
 }
 
